@@ -44,14 +44,14 @@ def get_answer_from_files(question, session_id, pinecone_index):
             files_string += file_string
 
         prompt = f"Given a question, try to answer it using the content of the file extracts below, and if you cannot answer, or find " \
-            f"a relevant file, just output \"I couldn't find the answer to that question in your files.\".\n\n" \
+            f"a relevant file, just output \"I couldn't find the answer to that question in our database.\".\n\n" \
             f"If the answer is not contained in the files or if there are no file extracts, respond with \"I couldn't find the answer " \
-            f"to that question in your files.\" If the question is not actually a question, respond with \"That's not a valid question.\"\n\n" \
+            f"to that question in our database.\" If the question is not actually a question, respond with \"That's not a valid question.\"\n\n" \
             f"In the cases where you can find the answer, first give the answer. Then explain how you found the answer from the source or sources, " \
             f"and use the exact filenames of the source files you mention. Do not make up the names of any other files other than those mentioned "\
             f"in the files context. Give the answer in markdown format." \
             f"Use the following format:\n\nQuestion: <question>\n\nFiles:\n<###\n\"filename 1\"\nfile text>\n<###\n\"filename 2\"\nfile text>...\n\n"\
-            f"Answer: <answer or \"I couldn't find the answer to that question in your files\" or \"That's not a valid question.\">\n\n" \
+            f"Answer: <answer or \"I couldn't find the answer to that question in our database\" or \"That's not a valid question.\">\n\n" \
             f"Question: {question}\n\n" \
             f"Files:\n{files_string}\n" \
             f"Answer:"

@@ -106,5 +106,10 @@ def answer_question():
 def healthcheck():
     return "OK"
 
+@app.route("/", methods=["GET"])
+@cross_origin(supports_credentials=True)
+def home():
+    return "OK"
+
 if __name__ == "__main__" or __name__ == "app":
     app.run(debug=True, port=SERVER_PORT, threaded=True)
