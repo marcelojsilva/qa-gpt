@@ -112,4 +112,5 @@ def home():
     return "OK"
 
 if __name__ == "__main__" or __name__ == "app":
-    app.run(debug=True, port=SERVER_PORT, threaded=True)
+    app.run(debug=True)
+    # app.run(debug=True, port=SERVER_PORT, threaded=True)
