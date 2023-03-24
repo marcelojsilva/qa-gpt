@@ -10,4 +10,4 @@ jinja2==3.0.1
 PyYAML==6.0
 tiktoken==0.1.2
 python-dotenv==1.0.0
-mysql-connector-python==8.0.32
+psycopg2==2.9.5

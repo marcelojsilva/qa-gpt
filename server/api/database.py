@@ -1,13 +1,12 @@
-import sqlite3
-from sqlite3 import Error
-from config import *
+import psycopg2
+from psycopg2 import Error
 import os
 
 def upsert_text_dict(file_name, extracted_text):
-    conn = create_connection(DATABASE_NAME)
+    conn = create_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT OR REPLACE INTO text_dict (file_name, extracted_text) VALUES (?, ?)", (file_name, extracted_text))
+        cursor.execute("INSERT INTO text_dict (file_name, extracted_text) VALUES (%s, %s) ON CONFLICT (file_name) DO UPDATE SET extracted_text = %s", (file_name, extracted_text, extracted_text))
         conn.commit()
         print("Data upserted successfully.")
     except Error as e:
@@ -17,10 +16,10 @@ def upsert_text_dict(file_name, extracted_text):
     return True
     
 def insert_questions_answers(question, answer):
-    conn = create_connection(DATABASE_NAME)
+    conn = create_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO questions_answers (question, answer) VALUES (?, ?)", (question, answer))
+        cursor.execute("INSERT INTO questions_answers (question, answers) VALUES (%s, %s)", (question, answer))
         conn.commit()
         print("Data upserted successfully.")
     except Error as e:
@@ -30,7 +29,7 @@ def insert_questions_answers(question, answer):
     return True
 
 def query_text_dict(file_name=None):
-    conn = create_connection(DATABASE_NAME)
+    conn = create_connection()
     cursor = conn.cursor()
     try:
         if file_name:
@@ -47,17 +46,10 @@ def query_text_dict(file_name=None):
         print(f"Error: {e}")
         return None
 
-def create_connection(database=None):
+def create_connection():
     try:
-        db_exists = database_exists(database)
-        
-        if database is None:
-            conn = sqlite3.connect(":memory:")
-        else:
-            conn = sqlite3.connect(database)
-        
-        if not db_exists:
-            create_tables(conn)
+        psql = os.environ["DATABASE_URL"]
+        conn = psycopg2.connect(psql)
 
         return conn
     except Error as e:
@@ -65,7 +57,7 @@ def create_connection(database=None):
         return None
 
 def execute_query(query):
-    conn = create_connection(DATABASE_NAME)
+    conn = create_connection()
     cursor = conn.cursor()
 
     try:
@@ -78,42 +70,35 @@ def execute_query(query):
         conn.close()
 
 def fetch_all(query):
-    conn = create_connection(DATABASE_NAME)
+    conn = create_connection()
     cursor = conn.cursor()
     cursor.execute(query)
     result = cursor.fetchall()
     conn.close()
     return result
 
-def create_tables(conn):
-    create_table_text_dict(conn)
-    create_table_questions_answers(conn)
+def create_tables():
+    create_table_text_dict()
+    create_table_questions_answers()
     return True
 
-def create_table_text_dict(conn):
-    conn = create_connection(DATABASE_NAME)
+def create_table_text_dict():
     table_query = """
     CREATE TABLE IF NOT EXISTS text_dict (
         file_name VARCHAR(255) PRIMARY KEY,
-        extracted_text JSON
+        extracted_text TEXT
     )
     """
     execute_query(table_query)
-    conn.close()
     return True
 
-def create_table_questions_answers(conn):
-    conn = create_connection(DATABASE_NAME)
+def create_table_questions_answers():
     table_query = """
     CREATE TABLE IF NOT EXISTS questions_answers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         question TEXT,
-        answer TEXT
+        answers TEXT
     )
     """
     execute_query(table_query)
-    conn.close()
     return True
-
-def database_exists(database_name):
-    return os.path.isfile(database_name)

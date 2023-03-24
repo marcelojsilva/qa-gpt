@@ -33,5 +33,3 @@ SERVER_PORT = yaml_config.get("SERVER_PORT", None)
 
 # Use Path.resolve() to get the absolute path of the current directory
 SERVER_DIR = Path(__file__).resolve().parent
-
-DATABASE_NAME = yaml_config.get("DATABASE_NAME", None)
