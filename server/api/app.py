@@ -9,7 +9,7 @@ import logging
 import database
 
 from flask import Flask, jsonify
-# from flask_cors import CORS, cross_origin
+from flask_cors import CORS, cross_origin
 from flask import request
 
 from handle_file import handle_file
@@ -69,14 +69,14 @@ def create_app():
     
     app.config["file_text_dict"] = database.query_text_dict()
     
-    # CORS(app, supports_credentials=True)
+    CORS(app, supports_credentials=True)
 
     return app
 
 app = create_app()
 
 @app.route(f"/process_file", methods=["POST"])
-# @cross_origin(supports_credentials=True)
+@cross_origin(supports_credentials=True)
 def process_file():
     try:
         file = request.files['file']
@@ -89,7 +89,7 @@ def process_file():
         return jsonify({"success": False})
 
 @app.route(f"/answer_question", methods=["POST"])
-# @cross_origin(supports_credentials=True)
+@cross_origin(supports_credentials=True)
 def answer_question():
     try:
         params = request.get_json()
@@ -107,10 +107,10 @@ def healthcheck():
     return "OK"
 
 @app.route("/", methods=["GET"])
-# @cross_origin(supports_credentials=True)
+@cross_origin(supports_credentials=True)
 def home():
     return "OK"
 
-# if __name__ == "__main__" or __name__ == "app":
-#     app.run(debug=True)
-    # app.run(debug=True, port=SERVER_PORT, threaded=True)
+if __name__ == "__main__" or __name__ == "app":
+    # app.run(debug=True)
+    app.run(debug=True, port=SERVER_PORT, threaded=True)
