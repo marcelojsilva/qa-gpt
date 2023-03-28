@@ -144,12 +144,6 @@ resource "aws_security_group" "app" {
   }
 }
 
-resource "aws_eip" "eip_qa_gpt" {
-  vpc = true
-  instance = aws_instance.main.id 
-  depends_on = [aws_instance.main]
-}
-
 resource "aws_key_pair" "deployer" {
   key_name   = "${var.app_name}-deployer"
   public_key = file(var.public_key_path)
