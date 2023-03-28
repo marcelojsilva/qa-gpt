@@ -1,12 +1,24 @@
-provider "aws" {
-  region = "us-west-2"
+variable "app_name" {
+  type        = string
+  description = "The name of the application"
+}
+
+variable "region" {
+  type        = string
+  description = "The AWS region to deploy the infrastructure in"
+}
+
+variable "availability_zones" {
+  description = "A list of availability zones to use for subnets"
+  type        = list(string)
+  default     = ["a", "b"]
 }
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "main-vpc"
+    Name = "${var.app_name}-vpc"
   }
 }
 
@@ -16,9 +28,11 @@ resource "aws_subnet" "public" {
   cidr_block = "10.0.${count.index + 1}.0/24"
   vpc_id     = aws_vpc.main.id
 
+  availability_zone = "${var.region}${element(var.availability_zones, count.index)}"
   tags = {
-    Name = "public-subnet-${count.index + 1}"
+    Name = "${var.app_name}-public-subnet-${count.index + 1}"
   }
+
 }
 
 resource "aws_subnet" "private" {
@@ -27,13 +41,18 @@ resource "aws_subnet" "private" {
   cidr_block = "10.0.${count.index + 101}.0/24"
   vpc_id     = aws_vpc.main.id
 
+  availability_zone = "${var.region}${element(var.availability_zones, count.index)}"
   tags = {
-    Name = "private-subnet-${count.index + 1}"
+    Name = "${var.app_name}-private-subnet-${count.index + 1}"
   }
 }
 
-resource "aws_internet_gateway" "igw" {
+resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "${var.app_name}-igw"
+  }
 }
 
 resource "aws_route_table" "public" {
@@ -41,7 +60,11 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "${var.app_name}-public-route-table"
   }
 }
 
@@ -56,10 +79,14 @@ output "vpc_id" {
   value = aws_vpc.main.id
 }
 
-output "public_subnets" {
+output "private_subnet_ids" {
+  value = aws_subnet.private.*.id
+}
+
+output "public_subnet_ids" {
   value = aws_subnet.public.*.id
 }
 
-output "private_subnets" {
-  value = aws_subnet.private.*.id
+output "subnet_id" {
+  value = aws_subnet.private[0].id
 }

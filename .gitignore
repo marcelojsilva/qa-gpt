@@ -134,3 +134,10 @@ dmypy.json
 *.DS_Store
 apps/file-q-and-a/nextjs-with-flask-server/server/database.sqlite
 server/database.sqlite
+
+mj.md
+.terraform/
+.terraform.lock.hcl
+server/terraform/terraform.tfstate
+server/terraform/terraform.tfstate.backup
+server/terraform/terraform.tfvars

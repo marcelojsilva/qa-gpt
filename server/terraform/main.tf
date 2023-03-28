@@ -1,48 +1,106 @@
-provider "aws" {
-  region = "us-west-2"
+variable "region" {
+  default = "us-east-1"
 }
 
-data "aws_region" "current" {}
+variable "db_url" {
+  type = string
+  description = "The database url"
+}
+
+variable "openai_api_key" {
+  type = string
+  description = "The OpenAI API key"
+}
+
+variable "pinecone_api_key" {
+  type = string
+  description = "The Pinecone API key"
+}
+
+provider "aws" {
+  region = var.region
+}
 
 locals {
-  app_name = "flask-app"
+  app_name = "qa-gpt"
 }
 
 module "vpc" {
   source = "./vpc"
-}
-
-module "rds" {
-  source = "./rds"
-
-  vpc_id = module.vpc.vpc_id
   app_name = local.app_name
+  region       = var.region
 }
 
 module "ec2" {
-  source = "./ec2"
-
+  source    = "./ec2"
   vpc_id    = module.vpc.vpc_id
-  subnet_id = module.vpc.private_subnets[0]
+  # subnet_id = module.vpc.subnet_id
+  subnet_id = module.vpc.public_subnet_ids[0]
+  public_subnet_id = module.vpc.public_subnet_ids[0]
   app_name  = local.app_name
+  public_key_path = "~/.ssh/id_ed25519.pub"
+  db_url = var.db_url
+  openai_api_key = var.openai_api_key
+  pinecone_api_key = var.pinecone_api_key
+ 
+  depends_on = [
+    module.vpc
+  ]
 }
 
-module "alb" {
-  source = "./alb"
+# module "rds" {
+#   source   = "./rds"
+#   vpc_id   = module.vpc.vpc_id
+#   app_name = local.app_name
+#   private_subnet_ids = module.vpc.private_subnet_ids
+#   app_sg_id = module.ec2.security_group_id
+#   depends_on = [
+#     module.ec2
+#     ]
+# }
 
-  vpc_id          = module.vpc.vpc_id
-  public_subnets  = module.vpc.public_subnets
-  target_group_arn = module.ec2.target_group_arn
-  app_name        = local.app_name
+# module "alb" {
+#   source     = "./alb"
+#   vpc_id     = module.vpc.vpc_id
+#   app_name   = local.app_name
+#   public_subnet_ids = module.vpc.public_subnet_ids
+#   depends_on = [module.ec2]
+# }
+
+# module "api_gateway" {
+#   source       = "./api_gateway"
+#   app_name     = local.app_name
+#   alb_dns_name = module.alb.alb_dns_name
+#   region       = var.region
+#   depends_on   = [module.alb]
+# }
+
+# output "alb_dns_name" {
+#   value = module.alb.alb_dns_name
+#   depends_on = [
+#     module.alb
+#   ]
+# }
+
+output "ec2_public_ip" {
+  description = "The public IP address of the bastion host"
+  value       = module.ec2.ec2_public_ip
 }
 
-module "apigateway" {
-  source = "./apigateway"
-
-  alb_dns_name = module.alb.alb_dns_name
-  app_name     = local.app_name
+resource "aws_eip" "eip_qa_gpt" {
+  vpc = true
+  instance = aws_instance.main.id 
+  depends_on = [aws_instance.main]
 }
 
-output "api_gateway_healthcheck_url" {
-  value = module.apigateway.api_gateway_url
-}
+# output "bastion_public_ip" {
+#   description = "The public IP address of the bastion host"
+#   value       = module.ec2.bastion_public_ip
+# }
+
+# output "api_gateway_healthcheck_url" {
+#   value = module.api_gateway.api_gateway_healthcheck_url
+#   depends_on = [
+#     module.api_gateway
+#   ]
+# }

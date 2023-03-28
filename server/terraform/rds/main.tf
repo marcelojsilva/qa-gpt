@@ -1,65 +1,105 @@
-provider "aws" {
-  region = "us-west-2"
+
+variable "app_name" {
+  type        = string
+  description = "The name of the application"
 }
 
-resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
+variable "vpc_id" {
+  type        = string
+  description = "The VPC ID to deploy the infrastructure in"
+}
+
+variable "private_subnet_ids" {
+  type        = list(string)
+  description = "The list of private subnet IDs to deploy the RDS instance in"
+}
+
+variable "app_sg_id" {
+  type        = string
+  description = "The security group ID of the application"
+}
+
+resource "aws_db_instance" "main" {
+  identifier = "${var.app_name}-db"
+  engine     = "postgres"
+  engine_version    = "13.3"
+  skip_final_snapshot       = true
+  # final_snapshot_identifier = "your-final-snapshot-name" # Uncomment this line and provide a snapshot name if you want to create a final snapshot
+
+  instance_class             = "db.t3.micro"
+  allocated_storage          = 20
+  storage_type               = "gp2"
+  auto_minor_version_upgrade = true
+  backup_retention_period    = 7
+  storage_encrypted          = true
+
+  username = "appuser"
+  password = random_password.db_password.result
+
+  vpc_security_group_ids = [aws_security_group.db.id]
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+
+  multi_az            = false
+  publicly_accessible = false
+
+  parameter_group_name = aws_db_parameter_group.main.name
 
   tags = {
-    Name = "main-vpc"
+    Name = "${var.app_name}-db"
   }
 }
 
-resource "aws_subnet" "public" {
-  count = 2
+resource "aws_security_group" "db" {
+  name        = "${var.app_name}-db-sg"
+  description = "Allow inbound traffic to the RDS instance"
+  vpc_id      = var.vpc_id
 
-  cidr_block = "10.0.${count.index + 1}.0/24"
-  vpc_id     = aws_vpc.main.id
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [var.app_sg_id]
+  }
 
   tags = {
-    Name = "public-subnet-${count.index + 1}"
+    Name = "${var.app_name}-db-sg"
   }
 }
 
-resource "aws_subnet" "private" {
-  count = 2
-
-  cidr_block = "10.0.${count.index + 101}.0/24"
-  vpc_id     = aws_vpc.main.id
+resource "aws_db_subnet_group" "main" {
+  name       = "${var.app_name}-db-subnet-group"
+  subnet_ids = var.private_subnet_ids
 
   tags = {
-    Name = "private-subnet-${count.index + 1}"
+    Name = "${var.app_name}-db-subnet-group"
   }
 }
 
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-}
+resource "aws_db_parameter_group" "main" {
+  name   = "${var.app_name}-db-pg"
+  family = "postgres13"
 
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
+  }
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
+  tags = {
+    Name = "${var.app_name}-db-pg"
   }
 }
 
-resource "aws_route_table_association" "public" {
-  count = length(aws_subnet.public)
-
-  subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public.id
+resource "random_password" "db_password" {
+  length  = 16
+  special = true
 }
 
-output "vpc_id" {
-  value = aws_vpc.main.id
+output "db_instance_endpoint" {
+  value = aws_db_instance.main.endpoint
 }
 
-output "public_subnets" {
-  value = aws_subnet.public.*.id
-}
-
-output "private_subnets" {
-  value = aws_subnet.private.*.id
+output "db_password" {
+  value     = random_password.db_password.result
+  sensitive = true
 }
