@@ -4,7 +4,7 @@ import { useState } from "react";
 import FileQandAArea from "../components/FileQandAArea";
 import { FileLite } from "../types/file";
 import FileUploadArea from "../components/FileUploadArea";
-import { ClerkProvider, SignIn, SignedIn, UserButton } from "@clerk/nextjs";
+import { ClerkProvider, SignIn, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function FileQandA() {
   const [files, setFiles] = useState<FileLite[]>([]);
@@ -35,7 +35,9 @@ export default function FileQandA() {
       </div>
     </div>
     </SignedIn>
+    <SignedOut>
     <SignIn />
+    </SignedOut>
     </ClerkProvider>
   );
 }
