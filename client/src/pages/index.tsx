@@ -4,11 +4,14 @@ import { useState } from "react";
 import FileQandAArea from "../components/FileQandAArea";
 import { FileLite } from "../types/file";
 import FileUploadArea from "../components/FileUploadArea";
+import { ClerkProvider, SignIn, SignedIn, UserButton } from "@clerk/nextjs";
 
 export default function FileQandA() {
   const [files, setFiles] = useState<FileLite[]>([]);
 
-  return (
+  return (<ClerkProvider>
+    <SignedIn>
+      <UserButton />
     <div className="flex items-left text-left h-screen flex-col">
       <Head>
         <title>File Q&A</title>
@@ -31,5 +34,8 @@ export default function FileQandA() {
         <FileQandAArea files={files} />
       </div>
     </div>
+    </SignedIn>
+    <SignIn />
+    </ClerkProvider>
   );
 }
