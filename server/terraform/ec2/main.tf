@@ -149,6 +149,12 @@ resource "aws_key_pair" "deployer" {
   public_key = file(var.public_key_path)
 }
 
+resource "aws_eip" "eip_qa_gpt" {
+  vpc = true
+  instance = aws_instance.main.id 
+  depends_on = [aws_instance.main]
+}
+
 output "security_group_id" {
   value = aws_security_group.app.id
 }
@@ -156,6 +162,11 @@ output "security_group_id" {
 output "ec2_public_ip" {
   description = "The public IP address of the bastion host"
   value       = aws_instance.main.public_ip
+}
+
+output "instance_id" {
+  description = "The instance id ec2 host"
+  value       = aws_instance.main.id
 }
 
 # output "bastion_public_ip" {

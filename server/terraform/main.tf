@@ -17,6 +17,11 @@ variable "pinecone_api_key" {
   description = "The Pinecone API key"
 }
 
+variable "certificate_arn" {
+  type        = string
+  description = "The ARN of the certificate to use for HTTPS"
+}
+
 provider "aws" {
   region = var.region
 }
@@ -59,13 +64,15 @@ module "ec2" {
 #     ]
 # }
 
-# module "alb" {
-#   source     = "./alb"
-#   vpc_id     = module.vpc.vpc_id
-#   app_name   = local.app_name
-#   public_subnet_ids = module.vpc.public_subnet_ids
-#   depends_on = [module.ec2]
-# }
+module "alb" {
+  source     = "./alb"
+  vpc_id     = module.vpc.vpc_id
+  app_name   = local.app_name
+  public_subnet_ids = module.vpc.public_subnet_ids
+  certificate_arn = var.certificate_arn
+  instance_id = module.ec2.instance_id
+  depends_on = [module.ec2]
+}
 
 # module "api_gateway" {
 #   source       = "./api_gateway"
@@ -75,22 +82,16 @@ module "ec2" {
 #   depends_on   = [module.alb]
 # }
 
-# output "alb_dns_name" {
-#   value = module.alb.alb_dns_name
-#   depends_on = [
-#     module.alb
-#   ]
-# }
+output "alb_dns_name" {
+  value = module.alb.alb_dns_name
+  depends_on = [
+    module.alb
+  ]
+}
 
 output "ec2_public_ip" {
   description = "The public IP address of the bastion host"
   value       = module.ec2.ec2_public_ip
-}
-
-resource "aws_eip" "eip_qa_gpt" {
-  vpc = true
-  instance = aws_instance.main.id 
-  depends_on = [aws_instance.main]
 }
 
 # output "bastion_public_ip" {
